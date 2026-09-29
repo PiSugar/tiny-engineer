@@ -1,0 +1,17 @@
+[Unit]
+Description=Tiny Engineer robot controller and web API
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=@OWNER@
+Group=@OWNER@
+WorkingDirectory=@ROOT@
+Environment=PYTHONUNBUFFERED=1
+ExecStart=@ROOT@/raspberry_pi/run_service.sh
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

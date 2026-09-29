@@ -1,5 +1,7 @@
 # Tiny Engineer
 
+> Raspberry Pi Zero 2 W users: the Whisplay HAT + Waveshare Servo Driver HAT port is documented in [docs/raspberry-pi-zero-2w.md](docs/raspberry-pi-zero-2w.md).
+
 > Give your AI coding agent a body.
 
 ![Tiny Engineer demo](docs/tiny-engineer-preview.gif)

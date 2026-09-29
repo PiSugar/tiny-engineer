@@ -11,6 +11,10 @@ cursor_events.log
 # platform.io
 .pio
 
+# Raspberry Pi local runtime
+raspberry_pi/.venv/
+raspberry_pi/config.json
+
 # Prerequisites
 *.d
 

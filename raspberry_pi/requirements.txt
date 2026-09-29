@@ -1,0 +1,4 @@
+Pillow>=9.4
+smbus2>=0.4.2
+luma.oled>=3.12
+

@@ -1,0 +1,16 @@
+{
+  "host": "0.0.0.0",
+  "port": 8080,
+  "i2c_bus": 1,
+  "pca9685_address": 64,
+  "oled_address": 60,
+  "oled_rotate_180": false,
+  "alsa_playback_device": "pulse",
+  "alsa_capture_device": "pulse",
+  "servo_mins": [60, 40, 45, 35, 40],
+  "servo_maxs": [130, 130, 135, 125, 130],
+  "servo_frequency_hz": 50,
+  "servo_min_us": 800,
+  "servo_max_us": 2200,
+  "release_after_seconds": 2.0
+}
