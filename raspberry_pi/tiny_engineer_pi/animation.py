@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
 import random
 import threading
 import time
 from pathlib import Path
 
 from .hardware import AudioDevice, ServoController
+
+
+logger = logging.getLogger(__name__)
 
 
 HEAD, NECK, LEFT, RIGHT, BODY = range(5)
@@ -171,12 +175,23 @@ class Animator:
     def run(self, stop_event: threading.Event) -> None:
         self._running = True
         previous = time.monotonic()
+        i2c_failures = 0
         while not stop_event.is_set():
             now = time.monotonic()
-            self.tick()
-            moving = self.servos.tick(now - previous)
-            if self.mode == "none" and not moving:
-                self.servos.release_if_idle()
+            try:
+                self.tick()
+                moving = self.servos.tick(now - previous)
+                if self.mode == "none" and not moving:
+                    self.servos.release_if_idle()
+                if i2c_failures:
+                    logger.warning("PCA9685 I2C communication recovered")
+                    i2c_failures = 0
+            except OSError as exc:
+                i2c_failures += 1
+                if i2c_failures == 1 or i2c_failures % 50 == 0:
+                    logger.warning(
+                        "PCA9685 I2C error; servo loop will keep retrying: %s", exc
+                    )
             previous = now
-            stop_event.wait(0.02)
+            stop_event.wait(0.1 if i2c_failures else 0.02)
         self._running = False

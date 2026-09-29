@@ -49,6 +49,24 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(mode_writes[-2] & 0x10, 0)
         self.assertEqual(mode_writes[-1] & 0x10, 0)
 
+    def test_pca9685_retries_transient_i2c_write_errors(self):
+        bus = FakeBus()
+        pwm = PCA9685(bus)
+        original_write = bus.write_byte_data
+        failures = 2
+
+        def flaky_write(address, register, value):
+            nonlocal failures
+            if failures:
+                failures -= 1
+                raise OSError(5, "I/O error")
+            original_write(address, register, value)
+
+        bus.write_byte_data = flaky_write
+        pwm.set_counts(0, 300)
+        self.assertEqual(failures, 0)
+        self.assertEqual(pwm._last_counts[0], 300)
+
     def test_config_rejects_bad_ranges(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"

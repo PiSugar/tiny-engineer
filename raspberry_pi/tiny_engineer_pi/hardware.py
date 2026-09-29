@@ -19,6 +19,7 @@ class PCA9685:
     MODE1 = 0x00
     PRESCALE = 0xFE
     LED0_ON_L = 0x06
+    I2C_ATTEMPTS = 3
 
     def __init__(self, bus: Bus, address: int = 0x40, frequency_hz: int = 50):
         self.bus = bus
@@ -27,18 +28,38 @@ class PCA9685:
         self._last_counts: list[int | None] = [None] * 16
         self._configure()
 
+    def _read_byte_data(self, register: int) -> int:
+        for attempt in range(self.I2C_ATTEMPTS):
+            try:
+                return self.bus.read_byte_data(self.address, register)
+            except OSError:
+                if attempt + 1 == self.I2C_ATTEMPTS:
+                    raise
+                time.sleep(0.01 * (attempt + 1))
+        raise AssertionError("unreachable")
+
+    def _write_byte_data(self, register: int, value: int) -> None:
+        for attempt in range(self.I2C_ATTEMPTS):
+            try:
+                self.bus.write_byte_data(self.address, register, value)
+                return
+            except OSError:
+                if attempt + 1 == self.I2C_ATTEMPTS:
+                    raise
+                time.sleep(0.01 * (attempt + 1))
+
     def _configure(self) -> None:
-        old_mode = self.bus.read_byte_data(self.address, self.MODE1)
+        old_mode = self._read_byte_data(self.MODE1)
         sleep_mode = (old_mode & 0x7F) | 0x10
         prescale = round(25_000_000 / (4096 * self.frequency_hz)) - 1
-        self.bus.write_byte_data(self.address, self.MODE1, sleep_mode)
-        self.bus.write_byte_data(self.address, self.PRESCALE, prescale)
+        self._write_byte_data(self.MODE1, sleep_mode)
+        self._write_byte_data(self.PRESCALE, prescale)
         # Wake the oscillator even if a previous process left SLEEP asserted.
         # Auto-increment is required for predictable sequential channel writes.
         awake_mode = (old_mode & ~0x10) | 0x20
-        self.bus.write_byte_data(self.address, self.MODE1, awake_mode)
+        self._write_byte_data(self.MODE1, awake_mode)
         time.sleep(0.005)
-        self.bus.write_byte_data(self.address, self.MODE1, awake_mode | 0x80)
+        self._write_byte_data(self.MODE1, awake_mode | 0x80)
 
     def set_counts(self, channel: int, counts: int) -> None:
         counts = max(0, min(4095, int(counts)))
@@ -46,13 +67,13 @@ class PCA9685:
             return
         register = self.LED0_ON_L + 4 * channel
         for offset, value in enumerate((0, 0, counts & 0xFF, counts >> 8)):
-            self.bus.write_byte_data(self.address, register + offset, value)
+            self._write_byte_data(register + offset, value)
         self._last_counts[channel] = counts
 
     def full_off(self, channel: int) -> None:
         register = self.LED0_ON_L + 4 * channel
         for offset, value in enumerate((0, 0, 0, 0x10)):
-            self.bus.write_byte_data(self.address, register + offset, value)
+            self._write_byte_data(register + offset, value)
         self._last_counts[channel] = None
 
 
